@@ -1,5 +1,5 @@
 <template>
-  <div :class="['rate-plan-right-part', disabled && 'is-disabled']">
+  <div :class="['rate-plan-right-part', disabled && 'is-disabled']" v-show="visible">
     <p>Selected Rate Plan</p>
     <div class="rate-item" :class="{'no-data': rate.list.length === 0}" v-for="rate in bakData" :key="rate.name">
       <h5 v-if="rate.list.length">{{ rate.name }}</h5>
@@ -27,56 +27,63 @@
   </div>
 </template>
 <script lang="ts">
-import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
+import { Vue, Component, Prop, Watch } from "vue-property-decorator";
 
 @Component
 export default class RightPart extends Vue {
-  @Prop({ type: Object, default: () => ({}) }) public ratePlanData!: any;
-  @Prop({ type: Boolean, default: false }) public disabled!: boolean;
-  public bakData: any = {};
+  @Prop({ type: Object, default: () => ({}) }) ratePlanData!: any;
+  @Prop({ type: Boolean, default: false }) disabled!: boolean;
+  bakData: any = {};
 
-  @Watch('ratePlanData.checkedKeys', { immediate: true, deep: true })
-  public checkedChange() {
+  @Watch("ratePlanData.checkedKeys", { immediate: true, deep: true })
+  checkedChange() {
     this.init();
   }
 
-  public init() {
-    const obj: any = {};
+  get visible() {
+    return this.bakData && Object.keys(this.bakData).length > 0
+  }
+
+  init() {
+    let obj: any = {};
     if (
       this.ratePlanData.checkedKeys &&
       Object.keys(this.ratePlanData.checkedKeys)
     ) {
       const data = JSON.parse(JSON.stringify(this.ratePlanData.checkedKeys));
       const checkedData = this.ratePlanData.checkedData;
-      for (const key in data) {
-        const hotelId = key.split('-')[0];
+      for (let key in data) {
+        const hotelId = key.split("-")[0];
         obj[hotelId] = obj[hotelId] || {};
-        obj[hotelId].hotelId = '' + hotelId;
+        obj[hotelId].hotelId = "" + hotelId;
         obj[hotelId].name = obj[hotelId].name || checkedData[hotelId].label;
         obj[hotelId].list = obj[hotelId].list || [];
         if (data[key] && data[key].length) {
           obj[hotelId].list.push({
             name: checkedData[key].label,
             children: data[key],
-            key,
+            key
           });
+        }
+        if(obj[hotelId].list.length === 0) {
+          delete obj[hotelId]
         }
       }
       this.bakData = JSON.parse(JSON.stringify(obj));
     }
   }
 
-  public deletePlan(value: any, type: string) {
+  deletePlan(value: any, type: string) {
     const { hotelId, index, planIndex, key } = value;
-    if (type === '2') {
+    if (type === "2") {
       this.bakData[hotelId].list[index].children = [];
-      this.$emit('change', { key, list: [] });
+      this.$emit("change", { key, list: [] });
     } else {
       this.bakData[hotelId].list[index].children.splice(planIndex, 1);
       const list = this.bakData[hotelId].list[index].children.map(
-        (child: any) => child.value,
+        (child: any) => child.value
       );
-      this.$emit('change', { key, list });
+      this.$emit("change", { key, list });
     }
     if (this.bakData[hotelId].list[index].children.length === 0) {
       this.bakData[hotelId].list.splice(index, 1);
@@ -128,8 +135,7 @@ export default class RightPart extends Vue {
     border-bottom: 1px solid rgba(0, 0, 0, 0.09);
     margin-bottom: 20px;
     &.no-data{
-      margin-bottom: 0px;
-      border-bottom: none;
+      display: none !important;
     }
     &:last-child{
       border-bottom: none;
